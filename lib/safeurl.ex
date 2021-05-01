@@ -64,7 +64,7 @@ defmodule SafeURL do
   If the URL is safe, this function returns the `HTTPoison` result directly; otherwise, `{:error, :restricted}`.
   """
   def get(url, options \\ [], headers \\ [], httpoison_options \\ []) do
-    if validate_url(url, options) do
+    if allowed?(url, options) do
       HTTPoison.get(url, headers, httpoison_options)
     else
       {:error, :restricted}
@@ -78,7 +78,7 @@ defmodule SafeURL do
 
   Returns `true` if the URL meets the requirements, `false` otherwise.
   """
-  def validate_url(url, options \\ []) do
+  def allowed?(url, options \\ []) do
     blacklist_private = Keyword.get(options, :blacklist_private, true)
     blacklist = Keyword.get(options, :blacklist, [])
     whitelist = Keyword.get(options, :whitelist, [])
