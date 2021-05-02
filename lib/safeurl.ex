@@ -46,6 +46,12 @@ defmodule SafeURL do
     "240.0.0.0/4"
   ]
 
+
+
+  # Public API
+  # ----------
+
+
   @doc """
   Validate a URL and execute a GET request using `HTTPoison` with the specified headers and options.
 
@@ -71,6 +77,7 @@ defmodule SafeURL do
     end
   end
 
+
   @doc """
   Validate a string URL against a blacklist or whitelist.
 
@@ -78,55 +85,85 @@ defmodule SafeURL do
 
   Returns `true` if the URL meets the requirements, `false` otherwise.
   """
-  def allowed?(url, options \\ []) do
-    blacklist_private = Keyword.get(options, :blacklist_private, true)
-    blacklist = Keyword.get(options, :blacklist, [])
-    whitelist = Keyword.get(options, :whitelist, [])
-    schemes = Keyword.get(options, :schemes, ["http", "https"])
-    host_info = URI.parse(url)
+  @spec allowed?(binary(), Keyword.t()) :: boolean()
+  def allowed?(url, opts \\ []) do
+    uri = URI.parse(url)
+    opts = build_options(opts)
+    ip = resolve_address(uri.host)
 
-    # TODO: Refactor this to use idiomatic elixir control flow
-    if validate_scheme(host_info.scheme, schemes) == false do
-      false
-    else
-      addr = resolve_address(host_info.host)
-      if length(whitelist) != 0 do
-        validate_whitelist(addr, whitelist)
+    cond do
+      uri.scheme not in opts.schemes ->
+        false
+
+      opts.whitelist != [] ->
+        ip_in_ranges?(address, opts.whitelist)
+
+      true ->
+        !ip_in_ranges?(address, opts.blacklist)
+    end
+  end
+
+
+
+
+  # Private Helpers
+  # ---------------
+
+
+  # Return a map of calculated options
+  defp build_options(opts) do
+    schemes = get_option(opts, :schemes)
+    whitelist = get_option(opts, :whitelist)
+    blacklist = get_option(opts, :blacklist)
+
+    blacklist =
+      if get_option(opts, :blacklist_reserved) do
+        blacklist ++ @reserved_ranges
       else
-        if blacklist_private == false do
-          validate_blacklist(addr, blacklist)
-        else
-          validate_blacklist(addr, @reserved_ranges ++ blacklist)
-        end
+        blacklist
       end
-    end
+
+    %{schemes: schemes, whitelist: whitelist, blacklist: blacklist}
   end
 
-  defp resolve_address(hostname) do
-    # Don't resolve hostname in DNS if it's an IP address
-    {result, value} = hostname |> to_charlist() |> :inet.parse_address()
-    if result != :ok do
-      {_, ip} = DNS.resolve(hostname)
-      # TODO: safely handle multiple IPs/round-robin DNS
-      List.first(ip)
+
+  # Get the value of a specific option, either from the application
+  # configs or overrides explicitly passed as arguments.
+  defp get_option(opts, key) do
+    if Keyword.has_key?(opts, key) do
+      Keyword.get(opts, key)
     else
-      value
+      Application.get_env(:safeurl, key)
     end
   end
 
-  defp validate_scheme(scheme, allowed_schemes) do
-    Enum.member?(allowed_schemes, scheme)
+
+  # Resolve hostname in DNS to an IP address (if not already an IP)
+  defp resolve_address(hostname) do
+    hostname
+    |> to_charlist()
+    |> :inet.parse_address()
+    |> case do
+      {:ok, ip} ->
+        ip
+
+      {:error, :einval} ->
+        # TODO: safely handle multiple IPs/round-robin DNS
+        case DNS.resolve(hostname) do
+          {:ok, ips} -> List.first(ips)
+          {:error, _reason} -> nil
+        end
+    end
   end
 
-  defp validate_whitelist(address, whitelist) do
-    Enum.any?(whitelist, fn range ->
-      InetCidr.contains?(InetCidr.parse(range), address)
+
+  defp ip_in_ranges?({_, _, _, _} = addr, ranges) when is_list(ranges) do
+    Enum.any?(ranges, fn range ->
+      range
+      |> InetCidr.parse()
+      |> InetCidr.contains?(addr)
     end)
   end
 
-  defp validate_blacklist(address, blacklist) do
-    !Enum.any?(blacklist, fn range ->
-      InetCidr.contains?(InetCidr.parse(range), address)
-    end)
-  end
+  defp ip_in_ranges?(_addr, _ranges), do: false
 end
