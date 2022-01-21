@@ -1,7 +1,7 @@
 # SafeURL
 SafeURL is a library that aids developers in protecting against a class of vulnerabilities known as Server Side Request Forgery. It does this by validating a URL against a configurable white or black list before making an HTTP request. SafeURL is open-source and licensed under MIT.
 
-**ALERT: This project is the start of an Elixir port of SafeURL, we encourage all to contribute to help us solve the SSRF problem across many programming langauges!!**
+This library was originally created by Nick Fox at [Include Security](https://github.com/IncludeSecurity), with substantial improvements contributed by the [Slab](https://github.com/slab) team. As of January 2022, this library is now maintained by Slab.
 
 ## Installation
 This package is not yet available in hex, so it must be installed from GitHub by adding the following to 
