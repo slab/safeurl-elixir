@@ -33,7 +33,7 @@ defmodule SafeURL.MixProject do
 
 
   defp description do
-    "Elixir Implementation of SafeURL, Anti-SSRF"
+    "SSRF Protection in Elixir 🛡️"
   end
 
 
