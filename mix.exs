@@ -46,9 +46,9 @@ defmodule SafeURL.MixProject do
   defp default_configs do
     [
       schemes: ~w[http https],
-      blacklist_reserved: true,
-      blacklist: [],
-      whitelist: [],
+      block_reserved: true,
+      blocklist: [],
+      allowlist: [],
     ]
   end
 

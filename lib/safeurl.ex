@@ -2,9 +2,9 @@ defmodule SafeURL do
   @moduledoc """
   `SafeURL` is library for mitigating Server Side Request
   Forgery vulnerabilities in Elixir. Private/reserved IP
-  addresses are blacklisted by default, and users can add
-  additional CIDR ranges to blacklist, or alternatively
-  whitelist specific CIDR ranges to which the application is
+  addresses are blocked by default, and users can add
+  additional CIDR ranges to the blocklist, or alternatively
+  allow specific CIDR ranges to which the application is
   allowed to make requests.
 
   You can use `allowed?/2` or `validate/2` to check if a
@@ -24,7 +24,7 @@ defmodule SafeURL do
       iex> SafeURL.validate("http://230.10.10.10/")
       {:error, :restricted}
 
-      iex> SafeURL.validate("http://230.10.10.10/", blacklist_reserved: false)
+      iex> SafeURL.validate("http://230.10.10.10/", block_reserved: false)
       :ok
 
       iex> SafeURL.get("https://10.0.0.1/ssrf.txt")
@@ -39,42 +39,42 @@ defmodule SafeURL do
   `SafeURL` can be configured to customize and override
   validation behaviour by passing the following options:
 
-    * `:blacklist_reserved` - Blacklist reserved/private IP
-      ranges. Defaults to `true`.
+    * `:block_reserved` - Block reserved/private IP ranges.
+      Defaults to `true`.
 
-    * `:blacklist` - List of CIDR ranges to blacklist. This is
-      additive with `:blacklist_reserved`. Defaults to `[]`.
+    * `:blocklist` - List of CIDR ranges to block. This is
+      additive with `:block_reserved`. Defaults to `[]`.
 
-    * `:whitelist` - List of CIDR ranges to whitelist. If
-      specified, blacklists will be ignored. Defaults to `[]`.
+    * `:allowlist` - List of CIDR ranges to allow. If
+      specified, blocklist will be ignored. Defaults to `[]`.
 
     * `:schemes` - List of allowed URL schemes. Defaults to
       `["http, "https"]`.
 
-  If `:blacklist_reserved` is `true` and additional hosts/ranges
-  are supplied with `:blacklist`, both of them are included in
-  the final blacklist to validate the address. If whitelisted
-  ranges are supplied with `:whitelist`, all blacklists are
-  ignored and any hosts not explicitly declared in the whitelist
+  If `:block_reserved` is `true` and additional hosts/ranges
+  are supplied with `:blocklist`, both of them are included in
+  the final blocklist to validate the address. If allowed
+  ranges are supplied with `:allowlist`, all blocklists are
+  ignored and any hosts not explicitly declared in the allowlist
   are rejected.
 
   These options can be set globally in your `config.exs` file:
 
       config :safeurl,
-        blacklist_reserved: true,
-        blacklist: ~w[100.0.0.0/16],
+        block_reserved: true,
+        blocklist: ~w[100.0.0.0/16],
         schemes: ~w[https]
 
   Or they can be passed to the function directly, overriding any
   global options if set:
 
-      iex> SafeURL.validate("http://10.0.0.1/", blacklist_reserved: false)
+      iex> SafeURL.validate("http://10.0.0.1/", block_reserved: false)
       :ok
 
-      iex> SafeURL.validate("https://app.service/", whitelist: ~w[170.0.0.0/24])
+      iex> SafeURL.validate("https://app.service/", allowlist: ~w[170.0.0.0/24])
       :ok
 
-      iex> SafeURL.validate("https://app.service/", blacklist: ~w[170.0.0.0/24])
+      iex> SafeURL.validate("https://app.service/", blocklist: ~w[170.0.0.0/24])
       {:error, :restricted}
 
   """
@@ -104,11 +104,11 @@ defmodule SafeURL do
 
 
   @doc """
-  Validate a string URL against a blacklist or whitelist.
+  Validate a string URL against a blocklist or allowlist.
 
   This method checks if a URL is safe to be called by looking at
   its scheme and resolved IP address, and matching it against
-  reserved CIDR ranges, and any provided whitelist/blacklist.
+  reserved CIDR ranges, and any provided allowlist/blocklist.
 
   Returns `true` if the URL meets the requirements,
   `false` otherwise.
@@ -121,7 +121,7 @@ defmodule SafeURL do
       iex> SafeURL.allowed?("http://10.0.0.1/")
       false
 
-      iex> SafeURL.allowed?("http://10.0.0.1/", whitelist: ~w[10.0.0.0/8])
+      iex> SafeURL.allowed?("http://10.0.0.1/", allowlist: ~w[10.0.0.0/8])
       true
 
   ## Options
@@ -139,11 +139,11 @@ defmodule SafeURL do
       uri.scheme not in opts.schemes ->
         false
 
-      opts.whitelist != [] ->
-        ip_in_ranges?(address, opts.whitelist)
+      opts.allowlist != [] ->
+        ip_in_ranges?(address, opts.allowlist)
 
       true ->
-        !ip_in_ranges?(address, opts.blacklist)
+        !ip_in_ranges?(address, opts.blocklist)
     end
   end
 
@@ -164,7 +164,7 @@ defmodule SafeURL do
       iex> SafeURL.validate("http://10.0.0.1/")
       {:error, :restricted}
 
-      iex> SafeURL.validate("http://10.0.0.1/", whitelist: ~w[10.0.0.0/8])
+      iex> SafeURL.validate("http://10.0.0.1/", allowlist: ~w[10.0.0.0/8])
       :ok
 
   ## Options
@@ -228,17 +228,17 @@ defmodule SafeURL do
   # Return a map of calculated options
   defp build_options(opts) do
     schemes = get_option(opts, :schemes)
-    whitelist = get_option(opts, :whitelist)
-    blacklist = get_option(opts, :blacklist)
+    allowlist = get_option(opts, :allowlist)
+    blocklist = get_option(opts, :blocklist)
 
-    blacklist =
-      if get_option(opts, :blacklist_reserved) do
-        blacklist ++ @reserved_ranges
+    blocklist =
+      if get_option(opts, :block_reserved) do
+        blocklist ++ @reserved_ranges
       else
-        blacklist
+        blocklist
       end
 
-    %{schemes: schemes, whitelist: whitelist, blacklist: blacklist}
+    %{schemes: schemes, allowlist: allowlist, blocklist: blocklist}
   end
 
 
