@@ -4,7 +4,7 @@ defmodule SafeURL.MixProject do
 
   @app     :safeurl
   @name    "SafeURL"
-  @version "0.1.0"
+  @version "0.2.0"
   @github  "https://github.com/slab/safeurl-elixir"
 
 

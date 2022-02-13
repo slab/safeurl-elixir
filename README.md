@@ -32,7 +32,7 @@ Add `safeurl` to your project dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:safeurl, "~> 0.1.0"}]
+  [{:safeurl, "~> 0.2.0"}]
 end
 ```
 
