@@ -60,6 +60,7 @@ defmodule SafeURL.MixProject do
       {:inet_cidr, "~> 1.0"},
       {:dns, "~> 2.2"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:mock, "~> 0.3.0", only: :test},
     ]
   end
 
