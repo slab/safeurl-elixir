@@ -26,8 +26,18 @@ defmodule SafeURLTest do
       refute SafeURL.allowed?("http://192.168.1.1/")
     end
 
-    test "allows blacklisting custom IP ranges" do
-      opts = [blacklist: ["5.5.0.0/16", "100.0.0.0/24"]]
+    test "returns true for reserved ranges if overridden" do
+      opts = [block_reserved: false]
+
+      assert SafeURL.allowed?("http://0.0.0.0/", opts)
+      assert SafeURL.allowed?("http://10.0.0.1/", opts)
+      assert SafeURL.allowed?("http://127.0.0.1/", opts)
+      assert SafeURL.allowed?("http://169.254.9.1/", opts)
+      assert SafeURL.allowed?("http://192.168.1.1/", opts)
+    end
+
+    test "blocking custom IP ranges" do
+      opts = [blocklist: ["5.5.0.0/16", "100.0.0.0/24"]]
 
       assert SafeURL.allowed?("http://includesecurity.com", opts)
       assert SafeURL.allowed?("http://3.3.3.3", opts)
@@ -35,8 +45,8 @@ defmodule SafeURLTest do
       refute SafeURL.allowed?("http://100.0.0.50", opts)
     end
 
-    test "only allows whitelist when present" do
-      opts = [whitelist: ["10.0.0.0/24"]]
+    test "only allows IPs in the allowlist when present" do
+      opts = [allowlist: ["10.0.0.0/24"]]
 
       assert SafeURL.allowed?("http://10.0.0.1/", opts)
       refute SafeURL.allowed?("http://72.254.45.178", opts)

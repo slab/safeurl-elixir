@@ -15,4 +15,7 @@ erl_crash.dump
 
 ### Elixir Patch ###
 
+.idea/*
+*.iml
+.tool-versions
 # End of https://www.toptal.com/developers/gitignore/api/elixir
