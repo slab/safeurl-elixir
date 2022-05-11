@@ -49,6 +49,7 @@ defmodule SafeURL.MixProject do
       block_reserved: true,
       blocklist: [],
       allowlist: [],
+      dns_module: DNS,
     ]
   end
 

@@ -133,7 +133,7 @@ defmodule SafeURL do
   def allowed?(url, opts \\ []) do
     uri = URI.parse(url)
     opts = build_options(opts)
-    address = resolve_address(uri.host)
+    address = resolve_address(uri.host, opts.dns_module)
 
     cond do
       uri.scheme not in opts.schemes ->
@@ -230,6 +230,7 @@ defmodule SafeURL do
     schemes = get_option(opts, :schemes)
     allowlist = get_option(opts, :allowlist)
     blocklist = get_option(opts, :blocklist)
+    dns_module = get_option(opts, :dns_module)
 
     blocklist =
       if get_option(opts, :block_reserved) do
@@ -238,7 +239,7 @@ defmodule SafeURL do
         blocklist
       end
 
-    %{schemes: schemes, allowlist: allowlist, blocklist: blocklist}
+    %{schemes: schemes, allowlist: allowlist, blocklist: blocklist, dns_module: dns_module}
   end
 
 
@@ -254,7 +255,7 @@ defmodule SafeURL do
 
 
   # Resolve hostname in DNS to an IP address (if not already an IP)
-  defp resolve_address(hostname) do
+  defp resolve_address(hostname, dns_module) do
     hostname
     |> to_charlist()
     |> :inet.parse_address()
@@ -264,7 +265,7 @@ defmodule SafeURL do
 
       {:error, :einval} ->
         # TODO: safely handle multiple IPs/round-robin DNS
-        case DNS.resolve(hostname) do
+        case dns_module.resolve(hostname) do
           {:ok, ips} -> List.first(ips)
           {:error, _reason} -> nil
         end

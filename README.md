@@ -90,6 +90,7 @@ following options:
 
   * `:schemes` - List of allowed URL schemes. Defaults to `["http, "https"]`.
 
+  * `:dns_module` - Any module that implements DNSResolver. Defaults to DNS from the `dns` package.
 
 These options can be passed to the function directly or set globally in your `config.exs`
 file:
