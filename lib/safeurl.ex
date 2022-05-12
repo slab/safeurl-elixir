@@ -213,6 +213,9 @@ defmodule SafeURL do
   @spec get(binary(), Keyword.t(), HTTPoison.headers(), Keyword.t()) ::
           {:ok, HTTPoison.Response.t()} | {:error, :restricted}
   def get(url, options \\ [], headers \\ [], httpoison_options \\ []) do
+    unless function_exported?(HTTPoison, :get, 3) do
+      raise "HTTPoison.get/3 not available"
+    end
     with :ok <- validate(url, options) do
       HTTPoison.get(url, headers, httpoison_options)
     end
