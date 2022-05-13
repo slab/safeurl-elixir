@@ -8,9 +8,9 @@ defmodule SafeURL do
   allowed to make requests.
 
   You can use `allowed?/2` or `validate/2` to check if a
-  URL is safe to call, or just call it directly via `get/4`
-  which will validate it automatically before calling, and
-  return an error if it is not.
+  URL is safe to call. If the `HTTPoison` application is
+  available, you can also call `get/4` directly which will
+  validate the host before making an HTTP request.
 
 
   ## Examples
@@ -26,6 +26,8 @@ defmodule SafeURL do
 
       iex> SafeURL.validate("http://230.10.10.10/", block_reserved: false)
       :ok
+
+      # If HTTPoison is available:
 
       iex> SafeURL.get("https://10.0.0.1/ssrf.txt")
       {:error, :restricted}
@@ -190,7 +192,8 @@ defmodule SafeURL do
   return `{:error, :restricted}`.
 
   `headers` and `httpoison_options` will be passed directly to
-  `HTTPoison` when the request is executed.
+  `HTTPoison` when the request is executed. This function will
+  raise if `HTTPoison` if not available.
 
   See `allowed?/2` for more details on URL validation.
 
@@ -211,8 +214,11 @@ defmodule SafeURL do
 
   """
   @spec get(binary(), Keyword.t(), HTTPoison.headers(), Keyword.t()) ::
-          {:ok, HTTPoison.Response.t()} | {:error, :restricted}
+          {:ok, HTTPoison.Response.t()} | {:error, :restricted} | no_return()
   def get(url, options \\ [], headers \\ [], httpoison_options \\ []) do
+    unless function_exported?(HTTPoison, :get, 3) do
+      raise "HTTPoison.get/3 not available"
+    end
     with :ok <- validate(url, options) do
       HTTPoison.get(url, headers, httpoison_options)
     end

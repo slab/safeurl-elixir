@@ -28,11 +28,15 @@ See the [Documentation][docs] on HexDocs.
 
 ## Installation
 
-Add `safeurl` to your project dependencies in `mix.exs`:
+To get started, add `safeurl` to your project dependencies in `mix.exs`. Optionally, you may
+also add `HTTPoison` to your dependencies for making requests directly through SafeURL:
 
 ```elixir
 def deps do
-  [{:safeurl, "~> 0.2.0"}]
+  [
+    {:safeurl, "~> 0.2.0"},
+    {:httpoison, "~> 1.8"},  # Optional
+  ]
 end
 ```
 
@@ -47,9 +51,9 @@ end
 CIDR ranges to the blocklist, or alternatively allow specific CIDR ranges to which the
 application is allowed to make requests.
 
-You can use `allowed?/2` or `validate/2` to check if a URL is safe to call, or just call
-it directly via `get/4` which will validate it automatically before calling, and return an
-error if it is not.
+You can use `allowed?/2` or `validate/2` to check if a URL is safe to call, or if you have
+the `HTTPoison` application available, just call it directly via `get/4` which will validate
+it automatically before calling, and return an error if it is not.
 
 
 ### Examples
@@ -66,6 +70,8 @@ iex> SafeURL.validate("http://230.10.10.10/")
 
 iex> SafeURL.validate("http://230.10.10.10/", block_reserved: false)
 :ok
+
+# When HTTPoison is available:
 
 iex> SafeURL.get("https://10.0.0.1/ssrf.txt")
 {:error, :restricted}
