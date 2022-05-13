@@ -1,12 +1,13 @@
-defmodule TestDNSResolver do
-  @behaviour DNSResolver
-
-  @impl DNSResolver
-  def resolve(_domain), do: {:ok, [{192, 0, 78, 24}]}
-end
-
 defmodule SafeURLTest do
   use ExUnit.Case
+
+  defmodule TestDNSResolver do
+    @behaviour SafeURL.DNSResolver
+
+    @impl true
+    def resolve(_domain), do: {:ok, [{192, 0, 78, 24}]}
+  end
+
 
   # setup_all do
   #   global_whitelist = ["10.0.0.0/24"]
@@ -17,12 +18,14 @@ defmodule SafeURLTest do
 
   describe "#allowed?" do
     test "returns true for only allowed schemes" do
-      assert SafeURL.allowed?("http://includesecurity.com", dns_module: TestDNSResolver)
-      assert SafeURL.allowed?("https://includesecurity.com", dns_module: TestDNSResolver)
-      refute SafeURL.allowed?("ftp://includesecurity.com", dns_module: TestDNSResolver)
+      opts = [dns_module: TestDNSResolver]
+      assert SafeURL.allowed?("http://includesecurity.com", opts)
+      assert SafeURL.allowed?("https://includesecurity.com", opts)
+      refute SafeURL.allowed?("ftp://includesecurity.com", opts)
 
-      assert SafeURL.allowed?("ftp://includesecurity.com", schemes: ~w[ftp], dns_module: TestDNSResolver)
-      refute SafeURL.allowed?("http://includesecurity.com", schemes: ~w[ftp], dns_module: TestDNSResolver)
+      opts = [schemes: ~w[ftp], dns_module: TestDNSResolver]
+      assert SafeURL.allowed?("ftp://includesecurity.com", opts)
+      refute SafeURL.allowed?("http://includesecurity.com", opts)
     end
 
     test "returns false for reserved ranges" do

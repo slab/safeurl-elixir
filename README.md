@@ -29,7 +29,8 @@ See the [Documentation][docs] on HexDocs.
 ## Installation
 
 To get started, add `safeurl` to your project dependencies in `mix.exs`. Optionally, you may
-also add `HTTPoison` to your dependencies for making requests directly through SafeURL:
+also add [`HTTPoison`][lib-httpoison] to your dependencies for making requests directly
+through SafeURL:
 
 ```elixir
 def deps do
@@ -39,6 +40,8 @@ def deps do
   ]
 end
 ```
+
+To use SafeURL with your favorite HTTP Client, see the [HTTP Clients][readme-http] section.
 
 <br>
 
@@ -51,12 +54,10 @@ end
 CIDR ranges to the blocklist, or alternatively allow specific CIDR ranges to which the
 application is allowed to make requests.
 
-You can use `allowed?/2` or `validate/2` to check if a URL is safe to call, or if you have
-the `HTTPoison` application available, just call it directly via `get/4` which will validate
-it automatically before calling, and return an error if it is not.
+You can use `allowed?/2` or `validate/2` to check if a URL is safe to call. If you have the
+[`HTTPoison`][lib-httpoison] application available, you can also call `get/4` which will
+validate the host automatically before making a web request, and return an error otherwise.
 
-
-### Examples
 
 ```elixir
 iex> SafeURL.allowed?("https://includesecurity.com")
@@ -80,8 +81,12 @@ iex> SafeURL.get("https://google.com/")
 {:ok, %HTTPoison.Response{...}}
 ```
 
+<br>
 
-### Configuration
+
+
+
+## Configuration
 
 `SafeURL` can be configured to customize and override validation behaviour by passing the
 following options:
@@ -96,7 +101,8 @@ following options:
 
   * `:schemes` - List of allowed URL schemes. Defaults to `["http, "https"]`.
 
-  * `:dns_module` - Any module that implements DNSResolver. Defaults to DNS from the `dns` package.
+  * `:dns_module` - Any module that implements the `SafeURL.DNSResolver` behaviour.
+    Defaults to `DNS` from the [`:dns`][lib-dns] package.
 
 These options can be passed to the function directly or set globally in your `config.exs`
 file:
@@ -105,15 +111,121 @@ file:
 config :safeurl,
   block_reserved: true,
   blocklist: ~w[100.0.0.0/16],
-  schemes: ~w[https]
+  schemes: ~w[https],
+  dns_module: MyCustomDNSResolver
 ```
 
 Find detailed documentation on [HexDocs][docs].
 
-<!--
-  TODO: Add section explaining how to use SafeURL with various HTTP libraries
-  such as HTTPoison, Tesla, etc. once we remove HTTPoison as a dependency.
--->
+<br>
+
+
+
+
+## HTTP Clients
+
+While SafeURL already provides a convenient [`get/4`][docs-get] method to validate hosts
+before making GET HTTP requests, you can also write your own wrappers, helpers or
+middleware to work with the HTTP Client of your choice.
+
+
+### HTTPoison
+
+For [HTTPoison][lib-httpoison], you can create a wrapper module that validates hosts
+before making HTTP requests:
+
+```elixir
+defmodule CustomClient do
+  def request(method, url, body, headers \\ [], opts \\ []) do
+    {safeurl_opts, opts} = Keyword.pop(opts, :safeurl, [])
+
+    with :ok <- SafeURL.validate(url, safeurl_opts) do
+      HTTPoison.request(method, url, body, headers, opts)
+    end
+  end
+
+  def get(url, headers \\ [], opts \\ []),        do: request(:get, url, "", headers, opts)
+  def post(url, body, headers \\ [], opts \\ []), do: request(:post, url, body, headers, opts)
+  # ...
+end
+```
+
+And you can use it as:
+
+```elixir
+iex> CustomClient.get("http://230.10.10.10/data.json", [], safeurl: [block_reserved: false], recv_timeout: 500)
+{:ok, %HTTPoison.Response{...}}
+```
+
+
+### Tesla
+
+For [Tesla][lib-tesla], you can write a custom middleware to halt requests that are not
+allowed:
+
+```elixir
+defmodule MyApp.Middleware.SafeURL do
+  @behaviour Tesla.Middleware
+
+  @impl true
+  def call(env, next, opts) do
+    with :ok <- SafeURL.validate(env.url, opts), do: Tesla.run(next)
+  end
+end
+```
+
+And you can plug it in anywhere you're using Tesla:
+
+```elixir
+defmodule DocumentService do
+  use Tesla
+
+  plug Tesla.Middleware.BaseUrl, "https://document-service/"
+  plug Tesla.Middleware.JSON
+  plug MyApp.Middleware.SafeURL, schemes: ~w[https], allowlist: ["10.0.0.0/24"]
+
+  def fetch(id) do
+    get("/documents/#{id}")
+  end
+end
+```
+
+<br>
+
+
+
+
+## Custom DNS Resolver
+
+In some cases you might want to use a custom strategy for DNS resolution. You can do so by
+passing your own implementation of [`SafeURL.DNSResolver`][docs-dns] in the global or local
+config.
+
+Example use-cases of this are:
+
+ - Using a specific DNS server
+ - Avoiding network access in specific environments
+ - Mocking DNS resolution in tests
+
+You can do so by implementing `DNSResolver`:
+
+
+```elixir
+defmodule TestDNSResolver do
+  @behaviour SafeURL.DNSResolver
+
+  @impl true
+  def resolve("google.com"), do: {:ok, [{192, 168, 1, 10}]}
+  def resolve("github.com"), do: {:ok, [{192, 168, 1, 20}]}
+  def resolve(_domain),      do: {:ok, [{192, 168, 1, 99}]}
+end
+```
+
+```elixir
+config :safeurl, dns_module: TestDNSResolver
+```
+
+For more examples, see [`SafeURL.DNSResolver`][docs-dns] docs.
 
 <br>
 
@@ -149,9 +261,14 @@ This package is available as open source under the terms of the [MIT License][gi
 [hexpm]:            https://hex.pm/packages/safeurl
 [github-license]:   https://github.com/slab/safeurl-elixir/blob/master/LICENSE
 [github-fork]:      https://github.com/slab/safeurl-elixir/fork
-
-[docs]:             https://hexdocs.pm/safeurl
 [slab]:             https://slab.com/
 [includesecurity]:  https://github.com/IncludeSecurity
+[readme-http]:      #http-clients
 
+[docs]:             https://hexdocs.pm/safeurl
+[docs-get]:         https://hexdocs.pm/safeurl/SafeURL.html#get/4
+[docs-dns]:         https://hexdocs.pm/safeurl/SafeURL.DNSResolver.html
 
+[lib-dns]:          https://github.com/tungd/elixir-dns
+[lib-tesla]:        https://github.com/elixir-tesla/tesla
+[lib-httpoison]:    https://github.com/edgurgel/httpoison

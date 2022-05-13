@@ -53,6 +53,11 @@ defmodule SafeURL do
     * `:schemes` - List of allowed URL schemes. Defaults to
       `["http, "https"]`.
 
+    * `:dns_module` - Any module that implements the
+      `SafeURL.DNSResolver` behaviour. Defaults to `DNS` from
+      the `:dns` package.
+
+
   If `:block_reserved` is `true` and additional hosts/ranges
   are supplied with `:blocklist`, both of them are included in
   the final blocklist to validate the address. If allowed
@@ -65,7 +70,8 @@ defmodule SafeURL do
       config :safeurl,
         block_reserved: true,
         blocklist: ~w[100.0.0.0/16],
-        schemes: ~w[https]
+        schemes: ~w[https],
+        dns_module: MyCustomDNSResolver
 
   Or they can be passed to the function directly, overriding any
   global options if set:
@@ -272,7 +278,7 @@ defmodule SafeURL do
       {:error, :einval} ->
         # TODO: safely handle multiple IPs/round-robin DNS
         case dns_module.resolve(hostname) do
-          {:ok, ips} -> List.first(ips)
+          {:ok, ips} -> ips |> List.wrap() |> List.first()
           {:error, _reason} -> nil
         end
     end
