@@ -1,7 +1,7 @@
 SafeURL
 =======
 
-<!--[![Build Status][badge-github]][github-build]-->
+[![Build Status][badge-github]][github-build]
 [![Version][badge-version]][hexpm]
 [![Downloads][badge-downloads]][hexpm]
 [![License][badge-license]][github-license]
@@ -253,12 +253,13 @@ This package is available as open source under the terms of the [MIT License][gi
 
 
 
-<!--[badge-github]:     https://github.com/slab/delta-elixir/actions/workflows/ci.yml/badge.svg-->
+[badge-github]:     https://github.com/slab/safeurl-elixir/actions/workflows/ci.yml/badge.svg
 [badge-version]:    https://img.shields.io/hexpm/v/safeurl.svg
 [badge-license]:    https://img.shields.io/hexpm/l/safeurl.svg
 [badge-downloads]:  https://img.shields.io/hexpm/dt/safeurl.svg
 
 [hexpm]:            https://hex.pm/packages/safeurl
+[github-build]:     https://github.com/slab/safeurl-elixir/actions/workflows/ci.yml
 [github-license]:   https://github.com/slab/safeurl-elixir/blob/master/LICENSE
 [github-fork]:      https://github.com/slab/safeurl-elixir/fork
 [slab]:             https://slab.com/
