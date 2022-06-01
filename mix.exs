@@ -74,8 +74,8 @@ defmodule SafeURL.MixProject do
   defp package do
     [
       name: @app,
-      maintainers: ["Sheharyar Naseer", "Include Security", "Jason Chen"],
-      licenses: ["MIT"],
+      maintainers: ["Slab"],
+      licenses: ["BSD-3-Clause"],
       files: ~w(mix.exs lib README.md),
       links: %{
         "Github" => @github,
