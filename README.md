@@ -24,7 +24,7 @@ through SafeURL:
 ```elixir
 def deps do
   [
-    {:safeurl, "~> 0.3.0"},
+    {:safeurl, "~> 0.3"},
     {:httpoison, "~> 1.8"},  # Optional
   ]
 end
