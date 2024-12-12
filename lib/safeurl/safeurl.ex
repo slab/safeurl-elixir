@@ -288,7 +288,7 @@ defmodule SafeURL do
   defp ip_in_ranges?({_, _, _, _} = addr, ranges) when is_list(ranges) do
     Enum.any?(ranges, fn range ->
       range
-      |> InetCidr.parse()
+      |> InetCidr.parse_cidr!()
       |> InetCidr.contains?(addr)
     end)
   end
