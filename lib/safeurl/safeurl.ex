@@ -29,10 +29,10 @@ defmodule SafeURL do
 
       # If HTTPoison is available:
 
-      iex> SafeURL.get("https://10.0.0.1/ssrf.txt")
+      iex> SafeURL.HTTPoison.get("https://10.0.0.1/ssrf.txt")
       {:error, :restricted}
 
-      iex> SafeURL.get("https://google.com/")
+      iex> SafeURL.HTTPoison.get("https://google.com/")
       {:ok, %HTTPoison.Response{...}}
 
 
@@ -188,49 +188,6 @@ defmodule SafeURL do
       {:error, :restricted}
     end
   end
-
-
-  @doc """
-  Validate a URL and execute a GET request using `HTTPoison`.
-
-  If the URL is safe, this function will execute the request using
-  `HTTPoison`, returning the result directly. Otherwise, it will
-  return `{:error, :restricted}`.
-
-  `headers` and `httpoison_options` will be passed directly to
-  `HTTPoison` when the request is executed. This function will
-  raise if `HTTPoison` if not available.
-
-  See `allowed?/2` for more details on URL validation.
-
-  ## Examples
-
-      iex> SafeURL.get("https://10.0.0.1/ssrf.txt")
-      {:error, :restricted}
-
-      iex> SafeURL.get("https://google.com/")
-      {:ok, %HTTPoison.Response{...}}
-
-      iex> SafeURL.get("https://google.com/", schemes: ~w[ftp])
-      {:error, :restricted}
-
-  ## Options
-
-  See [`Options`](#module-options) section above.
-
-  """
-  @spec get(binary(), Keyword.t(), HTTPoison.headers(), Keyword.t()) ::
-          {:ok, HTTPoison.Response.t()} | {:error, :restricted} | no_return()
-  def get(url, options \\ [], headers \\ [], httpoison_options \\ []) do
-    unless function_exported?(HTTPoison, :get, 3) do
-      raise "HTTPoison.get/3 not available"
-    end
-    with :ok <- validate(url, options) do
-      HTTPoison.get(url, headers, httpoison_options)
-    end
-  end
-
-
 
 
   # Private Helpers
