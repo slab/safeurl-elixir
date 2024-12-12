@@ -58,7 +58,7 @@ defmodule SafeURL.MixProject do
   defp deps do
     [
       {:httpoison, "~> 1.0 or ~> 2.0", optional: true},
-      {:inet_cidr, "~> 1.0"},
+      {:inet_cidr, "~> 1.0 and >= 1.0.6"},
       {:dns, "~> 2.2"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
     ]
