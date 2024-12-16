@@ -24,7 +24,7 @@ defmodule SafeURL.MixProject do
         source_url: @github,
         homepage_url: @github,
         canonical: "https://hexdocs.pm/#{@app}",
-        extras: ["README.md"]
+        extras: ["README.md", "guides/migrating_to_1.0.md"]
       ]
     ]
   end
