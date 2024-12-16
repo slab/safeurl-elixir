@@ -8,9 +8,7 @@ defmodule SafeURL do
   allowed to make requests.
 
   You can use `allowed?/2` or `validate/2` to check if a
-  URL is safe to call. If the `HTTPoison` application is
-  available, you can also call `get/4` directly which will
-  validate the host before making an HTTP request.
+  URL is safe to call.
 
 
   ## Examples
@@ -19,10 +17,10 @@ defmodule SafeURL do
       true
 
       iex> SafeURL.validate("http://google.com/", schemes: ~w[https])
-      {:error, :restricted}
+      {:error, :unsafe_scheme}
 
       iex> SafeURL.validate("http://230.10.10.10/")
-      {:error, :restricted}
+      {:error, :unsafe_reserved}
 
       iex> SafeURL.validate("http://230.10.10.10/", block_reserved: false)
       :ok
@@ -30,7 +28,7 @@ defmodule SafeURL do
       # If HTTPoison is available:
 
       iex> SafeURL.HTTPoison.get("https://10.0.0.1/ssrf.txt")
-      {:error, :restricted}
+      {:error, :unsafe_reserved}
 
       iex> SafeURL.HTTPoison.get("https://google.com/")
       {:ok, %HTTPoison.Response{...}}
@@ -56,6 +54,10 @@ defmodule SafeURL do
     * `:dns_module` - Any module that implements the
       `SafeURL.DNSResolver` behaviour. Defaults to `DNS` from
       the `:dns` package.
+
+    * `:detailed_error` - Return specific error if validation fails. If set to
+      `false`, `validate/2` will return `{:error, :restricted}` regardless of
+      the reason. Defaults to `true`.
 
 
   If `:block_reserved` is `true` and additional hosts/ranges
@@ -105,11 +107,10 @@ defmodule SafeURL do
     "240.0.0.0/4"
   ]
 
-
+  @type error() :: :unsafe_scheme | :unsafe_allowlist | :unsafe_blocklist | :unsafe_reserved
 
   # Public API
   # ----------
-
 
   @doc """
   Validate a string URL against a blocklist or allowlist.
@@ -139,29 +140,19 @@ defmodule SafeURL do
   """
   @spec allowed?(binary(), Keyword.t()) :: boolean()
   def allowed?(url, opts \\ []) do
-    uri = URI.parse(url)
-    opts = build_options(opts)
-    address = resolve_address(uri.host, opts.dns_module)
-
-    cond do
-      uri.scheme not in opts.schemes ->
-        false
-
-      opts.allowlist != [] ->
-        ip_in_ranges?(address, opts.allowlist)
-
-      true ->
-        !ip_in_ranges?(address, opts.blocklist)
+    case validate(url, opts) do
+      :ok -> true
+      {:error, _} -> false
     end
   end
 
-
   @doc """
-  Alternative method of validating a URL, returning atoms instead
+  Alternative method of validating a URL, returning result tuple instead
   of booleans.
 
   This calls `allowed?/2` underneath to check if a URL is safe to
-  be called. If it is, it returns `:ok`, otherwise
+  be called. If it is, it returns `:ok`, otherwise an error tuple with a
+  specific reason. If `:detailed_error` is set to `false`, the error is always
   `{:error, :restricted}`.
 
   ## Examples
@@ -180,19 +171,37 @@ defmodule SafeURL do
   See [`Options`](#module-options) section above.
 
   """
-  @spec validate(binary(), Keyword.t()) :: :ok | {:error, :restricted}
+  @spec validate(binary(), Keyword.t()) :: :ok | {:error, error() | :restricted}
   def validate(url, opts \\ []) do
-    if allowed?(url, opts) do
-      :ok
-    else
-      {:error, :restricted}
+    uri = URI.parse(url)
+    opts = build_options(opts)
+    address = resolve_address(uri.host, opts.dns_module)
+
+    result =
+      cond do
+        uri.scheme not in opts.schemes ->
+          {:error, :unsafe_scheme}
+
+        opts.allowlist != [] ->
+          if ip_in_ranges?(address, opts.allowlist), do: :ok, else: {:error, :unsafe_allowlist}
+
+        opts.blocklist != [] and ip_in_ranges?(address, opts.blocklist) ->
+          {:error, :unsafe_blocklist}
+
+        opts.block_reserved and ip_in_ranges?(address, @reserved_ranges) ->
+          {:error, :unsafe_reserved}
+
+        true ->
+          :ok
+      end
+
+    with {:error, _} <- result do
+      if opts.detailed_error, do: result, else: {:error, :restricted}
     end
   end
 
-
   # Private Helpers
   # ---------------
-
 
   # Return a map of calculated options
   defp build_options(opts) do
@@ -200,28 +209,23 @@ defmodule SafeURL do
     allowlist = get_option(opts, :allowlist)
     blocklist = get_option(opts, :blocklist)
     dns_module = get_option(opts, :dns_module)
+    block_reserved = get_option(opts, :block_reserved)
+    detailed_error = get_option(opts, :detailed_error)
 
-    blocklist =
-      if get_option(opts, :block_reserved) do
-        blocklist ++ @reserved_ranges
-      else
-        blocklist
-      end
-
-    %{schemes: schemes, allowlist: allowlist, blocklist: blocklist, dns_module: dns_module}
+    %{
+      schemes: schemes,
+      allowlist: allowlist,
+      blocklist: blocklist,
+      dns_module: dns_module,
+      block_reserved: block_reserved,
+      detailed_error: detailed_error
+    }
   end
-
 
   # Get the value of a specific option, either from the application
   # configs or overrides explicitly passed as arguments.
-  defp get_option(opts, key) do
-    if Keyword.has_key?(opts, key) do
-      Keyword.get(opts, key)
-    else
-      Application.get_env(:safeurl, key)
-    end
-  end
-
+  defp get_option(opts, key),
+    do: Keyword.get_lazy(opts, key, fn -> Application.get_env(:safeurl, key) end)
 
   # Resolve hostname in DNS to an IP address (if not already an IP)
   defp resolve_address(hostname, dns_module) do
@@ -240,7 +244,6 @@ defmodule SafeURL do
         end
     end
   end
-
 
   defp ip_in_ranges?({_, _, _, _} = addr, ranges) when is_list(ranges) do
     Enum.any?(ranges, fn range ->
