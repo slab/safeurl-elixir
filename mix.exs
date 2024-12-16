@@ -11,7 +11,7 @@ defmodule SafeURL.MixProject do
       # Project
       app: @app,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.14",
       description: description(),
       package: package(),
       deps: deps(),
