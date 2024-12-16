@@ -27,7 +27,10 @@ if Code.ensure_loaded?(HTTPoison) do
 
     """
     @spec get(binary(), HTTPoison.headers(), Keyword.t()) ::
-            {:ok, HTTPoison.Response.t()} | {:error, HTTPoison.Error.t()} | {:error, SafeURL.error()} | {:error, :restricted}
+            {:ok, HTTPoison.Response.t()}
+            | {:error, HTTPoison.Error.t()}
+            | {:error, SafeURL.error()}
+            | {:error, :restricted}
     def get(url, headers \\ [], options \\ []) do
       with :ok <- SafeURL.validate(url) do
         HTTPoison.get(url, headers, options)
