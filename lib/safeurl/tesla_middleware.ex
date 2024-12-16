@@ -1,12 +1,13 @@
 if Code.ensure_loaded?(Tesla) do
   defmodule SafeURL.TeslaMiddleware do
+    @moduledoc since: "1.0.0"
     @moduledoc """
     Tesla middleware for validating URLs.
 
     ## Examples
 
         iex> Tesla.client([SafeURL.TeslaMiddleware]) |> Tesla.get("http://localhost/")
-        {:error, :restricted}
+        {:error, :unsafe_reserved}
     """
     @behaviour Tesla.Middleware
 
