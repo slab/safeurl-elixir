@@ -49,20 +49,20 @@ iex> SafeURL.allowed?("https://includesecurity.com")
 true
 
 iex> SafeURL.validate("http://google.com/", schemes: ~w[https])
-{:error, :restricted}
+{:error, :unsafe_scheme}
 
 iex> SafeURL.validate("http://230.10.10.10/")
-{:error, :restricted}
+{:error, :unsafe_reserved}
 
 iex> SafeURL.validate("http://230.10.10.10/", block_reserved: false)
 :ok
 
 # When HTTPoison is available:
 
-iex> SafeURL.get("https://10.0.0.1/ssrf.txt")
-{:error, :restricted}
+iex> SafeURL.HTTPoison.get("https://10.0.0.1/ssrf.txt")
+{:error, :unsafe_reserved}
 
-iex> SafeURL.get("https://google.com/")
+iex> SafeURL.HTTPoison.get("https://google.com/")
 {:ok, %HTTPoison.Response{...}}
 ```
 
@@ -86,6 +86,8 @@ following options:
 - `:dns_module` - Any module that implements the `SafeURL.DNSResolver` behaviour.
   Defaults to `DNS` from the [`:dns`][lib-dns] package.
 
+- `:detailed_error` - Return specific error if validation fails. If set to `false`, `validate/2` will return `{:error, :restricted}` regardless of the reason. Defaults to `true`.
+
 These options can be passed to the function directly or set globally in your `config.exs`
 file:
 
@@ -103,7 +105,7 @@ Find detailed documentation on [HexDocs][docs].
 
 ## HTTP Clients
 
-While SafeURL already provides a convenient [`get/4`][docs-get] method to validate hosts
+While SafeURL already provides a convenient [`SafeURL.HTTPoison.get/3`][docs-get] method to validate hosts
 before making GET HTTP requests, you can also write your own wrappers, helpers or
 middleware to work with the HTTP Client of your choice.
 
@@ -137,21 +139,7 @@ iex> CustomClient.get("http://230.10.10.10/data.json", [], safeurl: [block_reser
 
 ### Tesla
 
-For [Tesla][lib-tesla], you can write a custom middleware to halt requests that are not
-allowed:
-
-```elixir
-defmodule MyApp.Middleware.SafeURL do
-  @behaviour Tesla.Middleware
-
-  @impl true
-  def call(env, next, opts) do
-    with :ok <- SafeURL.validate(env.url, opts), do: Tesla.run(next)
-  end
-end
-```
-
-And you can plug it in anywhere you're using Tesla:
+For [Tesla][lib-tesla], `SafeURL` provides a helper middleware out-of-the-box, which you can plug anywhere you're using `Tesla`:
 
 ```elixir
 defmodule DocumentService do
@@ -159,7 +147,7 @@ defmodule DocumentService do
 
   plug Tesla.Middleware.BaseUrl, "https://document-service/"
   plug Tesla.Middleware.JSON
-  plug MyApp.Middleware.SafeURL, schemes: ~w[https], allowlist: ["10.0.0.0/24"]
+  plug SafeURL.TeslaMiddleware, schemes: ~w[https], allowlist: ["10.0.0.0/24"]
 
   def fetch(id) do
     get("/documents/#{id}")

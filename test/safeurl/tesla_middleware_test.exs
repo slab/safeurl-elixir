@@ -22,7 +22,7 @@ defmodule SafeURL.TeslaMiddlewareTest do
       Tesla.client([Tesla.Middleware.Logger, {TeslaMiddleware, dns_module: TestDNSResolver}])
 
     assert capture_log(fn ->
-             assert {:error, :restricted} = Tesla.get(client, "http://blocked")
-           end) =~ "http://blocked -> error: :restricted"
+             assert {:error, :unsafe_reserved} = Tesla.get(client, "http://blocked")
+           end) =~ "http://blocked -> error: :unsafe_reserved"
   end
 end

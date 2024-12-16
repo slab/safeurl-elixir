@@ -50,6 +50,7 @@ defmodule SafeURL.MixProject do
       blocklist: [],
       allowlist: [],
       dns_module: DNS,
+      detailed_error: true
     ]
   end
 
