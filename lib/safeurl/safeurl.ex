@@ -85,7 +85,7 @@ defmodule SafeURL do
       :ok
 
       iex> SafeURL.validate("https://app.service/", blocklist: ~w[170.0.0.0/24])
-      {:error, :restricted}
+      {:error, :unsafe_blocklist}
 
   """
 
@@ -161,7 +161,7 @@ defmodule SafeURL do
       :ok
 
       iex> SafeURL.validate("http://10.0.0.1/")
-      {:error, :restricted}
+      {:error, :unsafe_reserved}
 
       iex> SafeURL.validate("http://10.0.0.1/", allowlist: ~w[10.0.0.0/8])
       :ok
@@ -171,7 +171,7 @@ defmodule SafeURL do
   See [`Options`](#module-options) section above.
 
   """
-  @spec validate(binary(), Keyword.t()) :: :ok | {:error, error() | :restricted}
+  @spec validate(binary(), Keyword.t()) :: :ok | {:error, error()} | {:error, :restricted}
   def validate(url, opts \\ []) do
     uri = URI.parse(url)
     opts = build_options(opts)
