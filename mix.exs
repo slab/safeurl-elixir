@@ -1,47 +1,42 @@
 defmodule SafeURL.MixProject do
   use Mix.Project
 
-
-  @app     :safeurl
-  @name    "SafeURL"
+  @app :safeurl
+  @name "SafeURL"
   @version "0.3.1"
-  @github  "https://github.com/slab/safeurl-elixir"
-
+  @github "https://github.com/slab/safeurl-elixir"
 
   def project do
     [
       # Project
-      app:            @app,
-      version:        @version,
-      elixir:         "~> 1.10",
-      description:    description(),
-      package:        package(),
-      deps:           deps(),
-      elixirc_paths:  elixirc_paths(Mix.env()),
+      app: @app,
+      version: @version,
+      elixir: "~> 1.10",
+      description: description(),
+      package: package(),
+      deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
 
       # ExDoc
-      name:           @name,
+      name: @name,
       docs: [
-        main:         @name,
-        source_url:   @github,
+        main: @name,
+        source_url: @github,
         homepage_url: @github,
-        canonical:    "https://hexdocs.pm/#{@app}",
-        extras:       ["README.md"]
+        canonical: "https://hexdocs.pm/#{@app}",
+        extras: ["README.md"]
       ]
     ]
   end
-
 
   defp description do
     "SSRF Protection in Elixir 🛡️"
   end
 
-
   # BEAM Application
   def application do
     [env: default_configs()]
   end
-
 
   defp default_configs do
     [
@@ -54,7 +49,6 @@ defmodule SafeURL.MixProject do
     ]
   end
 
-
   # Dependencies
   defp deps do
     [
@@ -62,15 +56,13 @@ defmodule SafeURL.MixProject do
       {:inet_cidr, "~> 1.0 and >= 1.0.6"},
       {:dns, "~> 2.2"},
       {:tesla, "~> 1.0", optional: true},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
-
   # Compilation Paths
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_),     do: ["lib"]
-
+  defp elixirc_paths(_), do: ["lib"]
 
   # Package Information
   defp package do
@@ -81,7 +73,7 @@ defmodule SafeURL.MixProject do
       files: ~w(mix.exs lib README.md),
       links: %{
         "Github" => @github,
-        "Slab" => "https://slab.com/",
+        "Slab" => "https://slab.com/"
       }
     ]
   end
