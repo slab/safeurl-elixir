@@ -239,7 +239,7 @@ defmodule SafeURL do
       {:error, :einval} ->
         # TODO: safely handle multiple IPs/round-robin DNS
         case dns_module.resolve(hostname) do
-          {:ok, ips} -> ips |> List.wrap() |> List.first()
+          {:ok, [ip | _]} -> ip
           {:error, _reason} -> nil
         end
     end
