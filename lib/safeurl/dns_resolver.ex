@@ -69,6 +69,5 @@ defmodule SafeURL.DNSResolver do
 
   """
 
-  @type resolution :: :inet.ip() | [:inet.ip()]
-  @callback resolve(host :: binary()) :: {:ok, resolution()} | {:error, atom()}
+  @callback resolve(host :: String.t()) :: {:ok, list()} | {:error, :inet_res.res_error()}
 end
