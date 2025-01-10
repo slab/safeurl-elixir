@@ -54,7 +54,7 @@ defmodule SafeURL.MixProject do
     [
       {:httpoison, "~> 1.0 or ~> 2.0", optional: true},
       {:inet_cidr, "~> 1.0 and >= 1.0.6"},
-      {:dns, "~> 2.2"},
+      {:dns, "~> 2.4"},
       {:tesla, "~> 1.0", optional: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
